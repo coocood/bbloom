@@ -80,6 +80,37 @@ func TestM_JSON(t *testing.T) {
 
 }
 
+func TestM_Binary(t *testing.T) {
+	const shallBe = int(1 << 16)
+
+	bf = New(float64(n*10), float64(7))
+
+	cnt := 0
+	for i := range wordlist1 {
+		if !bf.AddIfNotHas(wordlist1[i]) {
+			cnt++
+		}
+	}
+
+	bin := bf.BinaryMarshal()
+
+	// create new bloomfilter from bloomfilter's JSON representation
+	var bf2 Bloom
+	bf2.BinaryUnmarshal(bin)
+
+	cnt2 := 0
+	for i := range wordlist1 {
+		if !bf2.AddIfNotHas(wordlist1[i]) {
+			cnt2++
+		}
+	}
+
+	if cnt2 != shallBe {
+		t.Errorf("FAILED !AddIfNotHas = %v; want %v", cnt2, shallBe)
+	}
+
+}
+
 func ExampleM_NewAddHasAddIfNotHas() {
 	bf := New(float64(512), float64(1))
 

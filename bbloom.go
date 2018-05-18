@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"log"
 	"math"
+	"reflect"
 	"sync"
 	"unsafe"
 )
@@ -110,8 +111,8 @@ func JSONUnmarshal(dbData []byte) Bloom {
 // Bloom filter
 type Bloom struct {
 	Mtx     sync.Mutex
-	ElemNum uint64
 	bitset  []uint64
+	ElemNum uint64
 	sizeExp uint64
 	size    uint64
 	setLocs uint64
@@ -268,3 +269,52 @@ func (bl Bloom) JSONMarshal() []byte {
 // 	l = hash << bl.sizeExp >> bl.sizeExp
 // 	return l, h
 // }
+
+func (bl Bloom) BinaryMarshal() []byte {
+	data := make([]byte, 8*5+len(bl.bitset)*8)
+	unsafeMarshal(data, uintptr(unsafe.Pointer(&bl.ElemNum)), 40)
+	copy(data[40:], sliceU64ToU8(bl.bitset))
+	return data
+}
+
+func (bl *Bloom) BinaryUnmarshal(data []byte) {
+	unsafeUnmarshal(uintptr(unsafe.Pointer(&bl.ElemNum)), 40, data)
+	bl.bitset = sliceU8ToU64(data[40:])
+	return
+}
+
+func sliceU64ToU8(u64Slice []uint64) []byte {
+	var u8s []byte
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&u8s))
+	hdr.Len = len(u64Slice) * 8
+	hdr.Cap = len(u64Slice) * 8
+	hdr.Data = uintptr(unsafe.Pointer(&u64Slice[0]))
+	return u8s
+}
+
+func sliceU8ToU64(u8s []byte) []uint64 {
+	var u64s []uint64
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&u64s))
+	hdr.Len = len(u8s) / 8
+	hdr.Cap = len(u8s) / 8
+	hdr.Data = uintptr(unsafe.Pointer(&u8s[0]))
+	return u64s
+}
+
+func unsafeMarshal(dest []byte, ptr uintptr, n int) {
+	var u8s []byte
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&u8s))
+	hdr.Len = n
+	hdr.Cap = n
+	hdr.Data = ptr
+	copy(dest, u8s)
+}
+
+func unsafeUnmarshal(ptr uintptr, n int, src []byte) {
+	var u8s []byte
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&u8s))
+	hdr.Len = n
+	hdr.Cap = n
+	hdr.Data = ptr
+	copy(u8s, src)
+}
