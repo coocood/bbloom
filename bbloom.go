@@ -28,6 +28,8 @@ import (
 	"reflect"
 	"sync"
 	"unsafe"
+
+	"github.com/coocood/rtutil"
 )
 
 // helper
@@ -132,14 +134,12 @@ type Bloom struct {
 // 	return l, h
 // }
 
-// Update: found sipHash of Jean-Philippe Aumasson & Daniel J. Bernstein to be even faster than absdbm()
-// https://131002.net/siphash/
-// siphash was implemented for Go by Dmitry Chestnykh https://github.com/dchest/siphash
-
 // Add
 // set the bit(s) for entry; Adds an entry to the Bloom filter
 func (bl *Bloom) Add(entry []byte) {
-	l, h := bl.sipHash(entry)
+	hash := rtutil.AESHash(entry)
+	h := hash >> bl.shift
+	l := hash << bl.shift >> bl.shift
 	for i := uint64(0); i < (*bl).setLocs; i++ {
 		(*bl).Set((h + i*l) & (*bl).size)
 		(*bl).ElemNum++
@@ -158,7 +158,9 @@ func (bl *Bloom) AddTS(entry []byte) {
 // check if bit(s) for entry is/are set
 // returns true if the entry was added to the Bloom Filter
 func (bl Bloom) Has(entry []byte) bool {
-	l, h := bl.sipHash(entry)
+	hash := rtutil.AESHash(entry)
+	h := hash >> bl.shift
+	l := hash << bl.shift >> bl.shift
 	for i := uint64(0); i < bl.setLocs; i++ {
 		switch bl.IsSet((h + i*l) & bl.size) {
 		case false:
