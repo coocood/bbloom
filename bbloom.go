@@ -29,7 +29,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/coocood/rtutil"
+	"github.com/dgryski/go-farm"
 )
 
 // helper
@@ -137,7 +137,7 @@ type Bloom struct {
 // Add
 // set the bit(s) for entry; Adds an entry to the Bloom filter
 func (bl *Bloom) Add(entry []byte) {
-	hash := rtutil.AESHash(entry)
+	hash := farm.Fingerprint64(entry)
 	h := hash >> bl.shift
 	l := hash << bl.shift >> bl.shift
 	for i := uint64(0); i < (*bl).setLocs; i++ {
@@ -158,7 +158,7 @@ func (bl *Bloom) AddTS(entry []byte) {
 // check if bit(s) for entry is/are set
 // returns true if the entry was added to the Bloom Filter
 func (bl Bloom) Has(entry []byte) bool {
-	hash := rtutil.AESHash(entry)
+	hash := farm.Fingerprint64(entry)
 	h := hash >> bl.shift
 	l := hash << bl.shift >> bl.shift
 	for i := uint64(0); i < bl.setLocs; i++ {
