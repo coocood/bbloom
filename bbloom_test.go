@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"testing"
+
+	"github.com/dgryski/go-farm"
 )
 
 var (
@@ -42,7 +44,7 @@ func TestM_NumberOfWrongs(t *testing.T) {
 
 	cnt := 0
 	for i := range wordlist1 {
-		if !bf.AddIfNotHas(wordlist1[i]) {
+		if !bf.AddIfNotHas(farm.Fingerprint64(wordlist1[i])) {
 			cnt++
 		}
 	}
@@ -57,7 +59,7 @@ func TestM_JSON(t *testing.T) {
 
 	cnt := 0
 	for i := range wordlist1 {
-		if !bf.AddIfNotHas(wordlist1[i]) {
+		if !bf.AddIfNotHas(farm.Fingerprint64(wordlist1[i])) {
 			cnt++
 		}
 	}
@@ -69,7 +71,7 @@ func TestM_JSON(t *testing.T) {
 
 	cnt2 := 0
 	for i := range wordlist1 {
-		if !bf2.AddIfNotHas(wordlist1[i]) {
+		if !bf2.AddIfNotHas(farm.Fingerprint64(wordlist1[i])) {
 			cnt2++
 		}
 	}
@@ -87,7 +89,7 @@ func TestM_Binary(t *testing.T) {
 
 	cnt := 0
 	for i := range wordlist1 {
-		if !bf.AddIfNotHas(wordlist1[i]) {
+		if !bf.AddIfNotHas(farm.Fingerprint64(wordlist1[i])) {
 			cnt++
 		}
 	}
@@ -100,7 +102,7 @@ func TestM_Binary(t *testing.T) {
 
 	cnt2 := 0
 	for i := range wordlist1 {
-		if !bf2.AddIfNotHas(wordlist1[i]) {
+		if !bf2.AddIfNotHas(farm.Fingerprint64(wordlist1[i])) {
 			cnt2++
 		}
 	}
@@ -116,19 +118,19 @@ func ExampleM_NewAddHasAddIfNotHas() {
 
 	fmt.Printf("%v %v %v %v\n", bf.sizeExp, bf.size, bf.setLocs, bf.shift)
 
-	bf.Add([]byte("Manfred"))
+	bf.Add(farm.Fingerprint64([]byte("Manfred")))
 	fmt.Println("bf.Add([]byte(\"Manfred\"))")
-	fmt.Printf("bf.Has([]byte(\"Manfred\")) -> %v - should be true\n", bf.Has([]byte("Manfred")))
-	fmt.Printf("bf.Add([]byte(\"manfred\")) -> %v - should be false\n", bf.Has([]byte("manfred")))
-	fmt.Printf("bf.AddIfNotHas([]byte(\"Manfred\")) -> %v - should be false\n", bf.AddIfNotHas([]byte("Manfred")))
-	fmt.Printf("bf.AddIfNotHas([]byte(\"manfred\")) -> %v - should be true\n", bf.AddIfNotHas([]byte("manfred")))
+	fmt.Printf("bf.Has([]byte(\"Manfred\")) -> %v - should be true\n", bf.Has(farm.Fingerprint64([]byte("Manfred"))))
+	fmt.Printf("bf.Add([]byte(\"manfred\")) -> %v - should be false\n", bf.Has(farm.Fingerprint64([]byte("manfred"))))
+	fmt.Printf("bf.AddIfNotHas([]byte(\"Manfred\")) -> %v - should be false\n", bf.AddIfNotHas(farm.Fingerprint64([]byte("Manfred"))))
+	fmt.Printf("bf.AddIfNotHas([]byte(\"manfred\")) -> %v - should be true\n", bf.AddIfNotHas(farm.Fingerprint64([]byte("manfred"))))
 
-	bf.AddTS([]byte("Hans"))
+	bf.AddTS(farm.Fingerprint64([]byte("Hans")))
 	fmt.Println("bf.AddTS([]byte(\"Hans\")")
-	fmt.Printf("bf.HasTS([]byte(\"Hans\")) -> %v - should be true\n", bf.HasTS([]byte("Hans")))
-	fmt.Printf("bf.AddTS([]byte(\"hans\")) -> %v - should be false\n", bf.HasTS([]byte("hans")))
-	fmt.Printf("bf.AddIfNotHasTS([]byte(\"Hans\")) -> %v - should be false\n", bf.AddIfNotHasTS([]byte("Hans")))
-	fmt.Printf("bf.AddIfNotHasTS([]byte(\"hans\")) -> %v - should be true\n", bf.AddIfNotHasTS([]byte("hans")))
+	fmt.Printf("bf.HasTS([]byte(\"Hans\")) -> %v - should be true\n", bf.HasTS(farm.Fingerprint64([]byte("Hans"))))
+	fmt.Printf("bf.AddTS([]byte(\"hans\")) -> %v - should be false\n", bf.HasTS(farm.Fingerprint64([]byte("hans"))))
+	fmt.Printf("bf.AddIfNotHasTS([]byte(\"Hans\")) -> %v - should be false\n", bf.AddIfNotHasTS(farm.Fingerprint64([]byte("Hans"))))
+	fmt.Printf("bf.AddIfNotHasTS([]byte(\"hans\")) -> %v - should be true\n", bf.AddIfNotHasTS(farm.Fingerprint64([]byte("hans"))))
 
 	// Output: 9 511 1 55
 	// bf.Add([]byte("Manfred"))
@@ -152,7 +154,7 @@ func BenchmarkM_New(b *testing.B) {
 func BenchmarkM_Clear(b *testing.B) {
 	bf = New(float64(n*10), float64(7))
 	for i := range wordlist1 {
-		bf.Add(wordlist1[i])
+		bf.Add(farm.Fingerprint64(wordlist1[i]))
 	}
 	b.ResetTimer()
 	for r := 0; r < b.N; r++ {
@@ -165,7 +167,7 @@ func BenchmarkM_Add(b *testing.B) {
 	b.ResetTimer()
 	for r := 0; r < b.N; r++ {
 		for i := range wordlist1 {
-			bf.Add(wordlist1[i])
+			bf.Add(farm.Fingerprint64(wordlist1[i]))
 		}
 	}
 
@@ -175,7 +177,7 @@ func BenchmarkM_Has(b *testing.B) {
 	b.ResetTimer()
 	for r := 0; r < b.N; r++ {
 		for i := range wordlist1 {
-			bf.Has(wordlist1[i])
+			bf.Has(farm.Fingerprint64(wordlist1[i]))
 		}
 	}
 
@@ -184,12 +186,12 @@ func BenchmarkM_Has(b *testing.B) {
 func BenchmarkM_AddIfNotHasFALSE(b *testing.B) {
 	bf = New(float64(n*10), float64(7))
 	for i := range wordlist1 {
-		bf.Has(wordlist1[i])
+		bf.Has(farm.Fingerprint64(wordlist1[i]))
 	}
 	b.ResetTimer()
 	for r := 0; r < b.N; r++ {
 		for i := range wordlist1 {
-			bf.AddIfNotHas(wordlist1[i])
+			bf.AddIfNotHas(farm.Fingerprint64(wordlist1[i]))
 		}
 	}
 }
@@ -200,7 +202,7 @@ func BenchmarkM_AddIfNotHasClearTRUE(b *testing.B) {
 	b.ResetTimer()
 	for r := 0; r < b.N; r++ {
 		for i := range wordlist1 {
-			bf.AddIfNotHas(wordlist1[i])
+			bf.AddIfNotHas(farm.Fingerprint64(wordlist1[i]))
 		}
 		bf.Clear()
 	}
@@ -212,7 +214,7 @@ func BenchmarkM_AddTS(b *testing.B) {
 	b.ResetTimer()
 	for r := 0; r < b.N; r++ {
 		for i := range wordlist1 {
-			bf.AddTS(wordlist1[i])
+			bf.AddTS(farm.Fingerprint64(wordlist1[i]))
 		}
 	}
 
@@ -222,7 +224,7 @@ func BenchmarkM_HasTS(b *testing.B) {
 	b.ResetTimer()
 	for r := 0; r < b.N; r++ {
 		for i := range wordlist1 {
-			bf.HasTS(wordlist1[i])
+			bf.HasTS(farm.Fingerprint64(wordlist1[i]))
 		}
 	}
 
@@ -231,12 +233,12 @@ func BenchmarkM_HasTS(b *testing.B) {
 func BenchmarkM_AddIfNotHasTSFALSE(b *testing.B) {
 	bf = New(float64(n*10), float64(7))
 	for i := range wordlist1 {
-		bf.Has(wordlist1[i])
+		bf.Has(farm.Fingerprint64(wordlist1[i]))
 	}
 	b.ResetTimer()
 	for r := 0; r < b.N; r++ {
 		for i := range wordlist1 {
-			bf.AddIfNotHasTS(wordlist1[i])
+			bf.AddIfNotHasTS(farm.Fingerprint64(wordlist1[i]))
 		}
 	}
 }
@@ -247,7 +249,7 @@ func BenchmarkM_AddIfNotHasTSClearTRUE(b *testing.B) {
 	b.ResetTimer()
 	for r := 0; r < b.N; r++ {
 		for i := range wordlist1 {
-			bf.AddIfNotHasTS(wordlist1[i])
+			bf.AddIfNotHasTS(farm.Fingerprint64(wordlist1[i]))
 		}
 		bf.Clear()
 	}

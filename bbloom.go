@@ -28,8 +28,6 @@ import (
 	"reflect"
 	"sync"
 	"unsafe"
-
-	"github.com/dgryski/go-farm"
 )
 
 // helper
@@ -136,8 +134,7 @@ type Bloom struct {
 
 // Add
 // set the bit(s) for entry; Adds an entry to the Bloom filter
-func (bl *Bloom) Add(entry []byte) {
-	hash := farm.Fingerprint64(entry)
+func (bl *Bloom) Add(hash uint64) {
 	h := hash >> bl.shift
 	l := hash << bl.shift >> bl.shift
 	for i := uint64(0); i < (*bl).setLocs; i++ {
@@ -148,17 +145,16 @@ func (bl *Bloom) Add(entry []byte) {
 
 // AddTS
 // Thread safe: Mutex.Lock the bloomfilter for the time of processing the entry
-func (bl *Bloom) AddTS(entry []byte) {
+func (bl *Bloom) AddTS(hash uint64) {
 	bl.Mtx.Lock()
 	defer bl.Mtx.Unlock()
-	bl.Add(entry[:])
+	bl.Add(hash)
 }
 
 // Has
 // check if bit(s) for entry is/are set
 // returns true if the entry was added to the Bloom Filter
-func (bl Bloom) Has(entry []byte) bool {
-	hash := farm.Fingerprint64(entry)
+func (bl Bloom) Has(hash uint64) bool {
 	h := hash >> bl.shift
 	l := hash << bl.shift >> bl.shift
 	for i := uint64(0); i < bl.setLocs; i++ {
@@ -172,21 +168,21 @@ func (bl Bloom) Has(entry []byte) bool {
 
 // HasTS
 // Thread safe: Mutex.Lock the bloomfilter for the time of processing the entry
-func (bl *Bloom) HasTS(entry []byte) bool {
+func (bl *Bloom) HasTS(hash uint64) bool {
 	bl.Mtx.Lock()
 	defer bl.Mtx.Unlock()
-	return bl.Has(entry[:])
+	return bl.Has(hash)
 }
 
 // AddIfNotHas
 // Only Add entry if it's not present in the bloomfilter
 // returns true if entry was added
 // returns false if entry was allready registered in the bloomfilter
-func (bl Bloom) AddIfNotHas(entry []byte) (added bool) {
-	if bl.Has(entry[:]) {
+func (bl Bloom) AddIfNotHas(hash uint64) (added bool) {
+	if bl.Has(hash) {
 		return added
 	}
-	bl.Add(entry[:])
+	bl.Add(hash)
 	return true
 }
 
@@ -194,10 +190,10 @@ func (bl Bloom) AddIfNotHas(entry []byte) (added bool) {
 // Tread safe: Only Add entry if it's not present in the bloomfilter
 // returns true if entry was added
 // returns false if entry was allready registered in the bloomfilter
-func (bl *Bloom) AddIfNotHasTS(entry []byte) (added bool) {
+func (bl *Bloom) AddIfNotHasTS(hash uint64) (added bool) {
 	bl.Mtx.Lock()
 	defer bl.Mtx.Unlock()
-	return bl.AddIfNotHas(entry[:])
+	return bl.AddIfNotHas(hash)
 }
 
 // Size
